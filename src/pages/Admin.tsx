@@ -88,6 +88,7 @@ const Admin: React.FC = () => {
             rows={5}
             value={content.bio || ''}
             onChange={(e) => setContent({ ...content, bio: e.target.value })}
+            style={{ whiteSpace: 'pre-wrap' }}
           />
         </div>
         <div className="form-group">
@@ -96,6 +97,7 @@ const Admin: React.FC = () => {
             rows={7}
             value={content.about || ''}
             onChange={(e) => setContent({ ...content, about: e.target.value })}
+            style={{ whiteSpace: 'pre-wrap' }}
           />
         </div>
         <fieldset>
@@ -163,6 +165,7 @@ const Admin: React.FC = () => {
                   rows={3}
                   value={project.description}
                   onChange={(e) => handleProjectChange(index, 'description', e.target.value)}
+                  style={{ whiteSpace: 'pre-wrap' }}
                 />
               </div>
               <button type="button" className="remove-project" onClick={() => removeProject(index)}>

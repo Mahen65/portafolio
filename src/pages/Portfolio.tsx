@@ -32,7 +32,7 @@ const Portfolio: React.FC = () => {
 
   return (
     <>
-      <Hero content={content} backgroundVideo={content.backgroundVideo} />
+     <Hero content={content} backgroundVideo={content.backgroundVideo} />
       <main>
         <About content={content} />
         <Skills />

@@ -18,6 +18,7 @@ const Hero: React.FC<HeroProps> = ({ content, backgroundVideo }) => {
         <p className="subtitle">Tech Lead | Full-Stack Developer | .NET & Python Specialist</p>
         <p className="bio">{content.bio}</p>
         <a href="#about" className="cta-button">Learn More</a>
+        <a href="/api/download-cv" className="cta-button" download>Download CV</a>
       </div>
     </header>
   );
