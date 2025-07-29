@@ -28,6 +28,8 @@ app.get('/api/videos', async (req, res) => {
    });
 app.post('/api/save-content', async (req, res) => {
   try {
+    // Temporarily disable file system operations for debugging
+    console.log('Received content:', req.body);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupPath = path.join(__dirname, 'data-backups', `content_${timestamp}.json`);
     const livePath = path.join(__dirname, 'public', 'content.json');
