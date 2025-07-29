@@ -29,7 +29,7 @@ app.get('/api/videos', async (req, res) => {
 app.post('/api/save-content', async (req, res) => {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = path.join(__dirname, 'public', `content_${timestamp}.json`);
+    const backupPath = path.join(__dirname, 'data-backups', `content_${timestamp}.json`);
     const livePath = path.join(__dirname, 'public', 'content.json');
 
     // 1. Create a backup of the current content
@@ -37,6 +37,10 @@ app.post('/api/save-content', async (req, res) => {
 
     // 2. Write the new content to the live file
     await fs.writeFile(livePath, JSON.stringify(req.body, null, 2));
+
+    // 3. Copy the updated content to the dist directory
+    const distPath = path.join(__dirname, 'dist', 'content.json');
+    await fs.copyFile(livePath, distPath);
 
     res.status(200).send({ message: 'Content saved successfully!' });
   } catch (error) {

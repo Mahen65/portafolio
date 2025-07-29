@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Hero from '../components/Hero';
 import About from '../components/About';
 import Skills from '../components/Skills';
@@ -12,24 +12,15 @@ interface Content {
   about: string;
   backgroundVideo: string;
   socialLinks: { name: string; url: string; }[];
-  projects: { title: string; description: string; }[];
+  projects: { title: string; description: string; technologies: string[] }[];
   experience: { title: string; company: string; description: string; }[];
 }
 
-const Portfolio: React.FC = () => {
-  const [content, setContent] = useState<Content | null>(null);
+interface PortfolioProps {
+  content: Content;
+}
 
-  useEffect(() => {
-    fetch('/content.json')
-      .then(response => response.json())
-      .then(data => setContent(data))
-      .catch(error => console.error("Failed to load content:", error));
-  }, []);
-
-  if (!content) {
-    return <div>Loading...</div>;
-  }
-
+const Portfolio: React.FC<PortfolioProps> = ({ content }) => {
   return (
     <>
      <Hero content={content} backgroundVideo={content.backgroundVideo} />

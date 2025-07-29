@@ -3,6 +3,7 @@ import React from 'react';
 interface Project {
   title: string;
   description: string;
+  technologies: string[];
 }
 
 interface ProjectsProps {
@@ -20,7 +21,7 @@ const Projects: React.FC<ProjectsProps> = ({ content }) => {
           <div key={index} className="project-card">
             <h3>{project.title}</h3>
             <p>{project.description}</p>
-            <a href="#">View Project</a>
+            <a href={`/project/${index}`} target="_blank" rel="noopener noreferrer">View Project</a>
           </div>
         ))}
       </div>

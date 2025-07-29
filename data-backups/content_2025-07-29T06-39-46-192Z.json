@@ -21,7 +21,8 @@
       "title": "Project One: React-Powered Dashboard",
       "description": "A sophisticated data visualization dashboard built with React for the frontend and a high-performance FastAPI backend. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
       "technologies": [
-        "C#"
+        "C#",
+        "React"
       ]
     },
     {

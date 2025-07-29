@@ -1,57 +1,88 @@
 import React, { useState, useEffect } from 'react';
 
-const Admin: React.FC = () => {
-  const [content, setContent] = useState<any>({});
+interface Content {
+  bio: string;
+  about: string;
+  backgroundVideo: string;
+  socialLinks: { name: string; url: string }[];
+  projects: { title: string; description: string; technologies: string[] }[];
+  experience: { title: string; company: string; description: string }[];
+}
+
+interface AdminProps {
+  content: Content;
+  onContentUpdate: (newContent: Content) => void;
+}
+
+const Admin: React.FC<AdminProps> = ({ content, onContentUpdate }) => {
   const [videos, setVideos] = useState<string[]>([]);
+  const [localContent, setLocalContent] = useState<Content>(content);
 
   useEffect(() => {
-    // Fetch existing content
-    fetch('/content.json')
-      .then(response => response.json())
-      .then(data => setContent(data));
-
     // Fetch video list
     fetch('/api/videos')
-      .then(response => response.json())
-      .then(data => setVideos(data));
+      .then((response) => response.json())
+      .then((data) => setVideos(data));
   }, []);
 
-  const handleProjectChange = (index: number, field: string, value: string) => {
-    const newProjects = [...content.projects];
+  useEffect(() => {
+    setLocalContent(content);
+  }, [content]);
+
+  const handleProjectChange = (index: number, field: string, value: string | string[]) => {
+    const newProjects = [...localContent.projects];
     newProjects[index][field] = value;
-    setContent({ ...content, projects: newProjects });
+    setLocalContent({ ...localContent, projects: newProjects });
+  };
+
+  const handleTechnologyChange = (projectIndex: number, techIndex: number, value: string) => {
+    const newProjects = [...localContent.projects];
+    newProjects[projectIndex].technologies[techIndex] = value;
+    setLocalContent({ ...localContent, projects: newProjects });
+  };
+
+  const addTechnology = (projectIndex: number) => {
+    const newProjects = [...localContent.projects];
+    newProjects[projectIndex].technologies.push('');
+    setLocalContent({ ...localContent, projects: newProjects });
+  };
+
+  const removeTechnology = (projectIndex: number, techIndex: number) => {
+    const newProjects = [...localContent.projects];
+    newProjects[projectIndex].technologies.splice(techIndex, 1);
+    setLocalContent({ ...localContent, projects: newProjects });
   };
 
   const addProject = () => {
-    setContent({
-      ...content,
-      projects: [...content.projects, { title: '', description: '' }],
+    setLocalContent({
+      ...localContent,
+      projects: [...localContent.projects, { title: '', description: '', technologies: [] }],
     });
   };
 
   const removeProject = (index: number) => {
-    const newProjects = [...content.projects];
+    const newProjects = [...localContent.projects];
     newProjects.splice(index, 1);
-    setContent({ ...content, projects: newProjects });
+    setLocalContent({ ...localContent, projects: newProjects });
   };
 
   const handleSocialLinkChange = (index: number, field: string, value: string) => {
-    const newSocialLinks = [...content.socialLinks];
+    const newSocialLinks = [...localContent.socialLinks];
     newSocialLinks[index][field] = value;
-    setContent({ ...content, socialLinks: newSocialLinks });
+    setLocalContent({ ...localContent, socialLinks: newSocialLinks });
   };
 
   const addSocialLink = () => {
-    setContent({
-      ...content,
-      socialLinks: [...content.socialLinks, { name: '', url: '' }],
+    setLocalContent({
+      ...localContent,
+      socialLinks: [...localContent.socialLinks, { name: '', url: '' }],
     });
   };
 
   const removeSocialLink = (index: number) => {
-    const newSocialLinks = [...content.socialLinks];
+    const newSocialLinks = [...localContent.socialLinks];
     newSocialLinks.splice(index, 1);
-    setContent({ ...content, socialLinks: newSocialLinks });
+    setLocalContent({ ...localContent, socialLinks: newSocialLinks });
   };
 
   const handleSave = async () => {
@@ -61,10 +92,11 @@ const Admin: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(content),
+        body: JSON.stringify(localContent),
       });
 
       if (response.ok) {
+        onContentUpdate(localContent);
         alert('Content saved successfully!');
       } else {
         alert('Failed to save content.');
@@ -86,8 +118,8 @@ const Admin: React.FC = () => {
           <label>Hero Bio</label>
           <textarea
             rows={5}
-            value={content.bio || ''}
-            onChange={(e) => setContent({ ...content, bio: e.target.value })}
+            value={localContent.bio || ''}
+            onChange={(e) => setLocalContent({ ...localContent, bio: e.target.value })}
             style={{ whiteSpace: 'pre-wrap' }}
           />
         </div>
@@ -95,8 +127,8 @@ const Admin: React.FC = () => {
           <label>About Me</label>
           <textarea
             rows={7}
-            value={content.about || ''}
-            onChange={(e) => setContent({ ...content, about: e.target.value })}
+            value={localContent.about || ''}
+            onChange={(e) => setLocalContent({ ...localContent, about: e.target.value })}
             style={{ whiteSpace: 'pre-wrap' }}
           />
         </div>
@@ -105,8 +137,10 @@ const Admin: React.FC = () => {
           <div className="form-group">
             <label>Select a background video:</label>
             <select
-              value={content.backgroundVideo || ''}
-              onChange={(e) => setContent({ ...content, backgroundVideo: e.target.value })}
+              value={localContent.backgroundVideo || ''}
+              onChange={(e) =>
+                setLocalContent({ ...localContent, backgroundVideo: e.target.value })
+              }
             >
               {videos.map(video => (
                 <option key={video} value={video}>{video}</option>
@@ -116,7 +150,7 @@ const Admin: React.FC = () => {
         </fieldset>
         <fieldset>
           <legend>Social Links</legend>
-          {content.socialLinks?.map((link: any, index: number) => (
+          {localContent.socialLinks?.map((link: any, index: number) => (
             <div key={index} className="project-group">
               <hr />
               <h4>Link {index + 1}</h4>
@@ -147,7 +181,7 @@ const Admin: React.FC = () => {
         </fieldset>
         <fieldset>
           <legend>Projects</legend>
-          {content.projects?.map((project: any, index: number) => (
+          {localContent.projects?.map((project: any, index: number) => (
             <div key={index} className="project-group">
               <hr />
               <h4>Project {index + 1}</h4>
@@ -167,6 +201,24 @@ const Admin: React.FC = () => {
                   onChange={(e) => handleProjectChange(index, 'description', e.target.value)}
                   style={{ whiteSpace: 'pre-wrap' }}
                 />
+              </div>
+              <div className="form-group">
+                <label>Technologies</label>
+                {project.technologies.map((tech: string, techIndex: number) => (
+                  <div key={techIndex} className="technology-group">
+                    <input
+                      type="text"
+                      value={tech}
+                      onChange={(e) => handleTechnologyChange(index, techIndex, e.target.value)}
+                    />
+                    <button type="button" onClick={() => removeTechnology(index, techIndex)}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className="cta-button" onClick={() => addTechnology(index)}>
+                  Add Technology
+                </button>
               </div>
               <button type="button" className="remove-project" onClick={() => removeProject(index)}>
                 Remove Project
