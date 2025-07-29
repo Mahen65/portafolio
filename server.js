@@ -26,25 +26,30 @@ app.get('/api/videos', async (req, res) => {
       res.status(500).send({ message: 'Failed to get videos.' });
      }
    });
+
 app.post('/api/save-content', async (req, res) => {
   try {
-    // Temporarily disable file system operations for debugging
-    console.log('Received content:', req.body);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = path.join(__dirname, 'data-backups', `content_${timestamp}.json`);
-    const livePath = path.join(__dirname, 'public', 'content.json');
+    // Vercel's serverless functions have a writable /tmp directory
+    const tempDir = '/tmp';
+    const backupPath = path.join(tempDir, `content_${timestamp}.json`);
+    const livePath = path.join(tempDir, 'content.json');
 
-    // 1. Create a backup of the current content
-    await fs.copyFile(livePath, backupPath);
+    try {
+      // Try to create a backup from the existing live file in /tmp
+      await fs.copyFile(livePath, backupPath);
+    } catch (error) {
+      // If livePath doesn't exist, it's the first run, which is fine.
+      console.log('No existing live file to back up. Creating a new one.');
+    }
 
-    // 2. Write the new content to the live file
+    // Write the new content to the live file in /tmp
     await fs.writeFile(livePath, JSON.stringify(req.body, null, 2));
 
-    // 3. Copy the updated content to the dist directory
-    const distPath = path.join(__dirname, 'dist', 'content.json');
-    await fs.copyFile(livePath, distPath);
+    // Note: Copying to 'dist' is not effective in serverless, as the build is static.
+    // The client should fetch from an API endpoint if it needs the latest content.
 
-    res.status(200).send({ message: 'Content saved successfully!' });
+    res.status(200).send({ message: 'Content saved successfully to temporary storage!' });
   } catch (error) {
     console.error('Failed to save content:', error);
     res.status(500).send({ message: 'Failed to save content.' });
