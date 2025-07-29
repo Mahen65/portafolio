@@ -95,6 +95,8 @@ h2 {
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
     border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
 }
 
 .skill-card:hover, .project-card:hover {
@@ -112,6 +114,15 @@ h2 {
     font-family: var(--heading-font);
     color: var(--primary-color);
     margin-top: 0;
+}
+
+.project-card p {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 10; /* Adjust this value to control the number of lines */
+    -webkit-box-orient: vertical;
 }
 
 .project-card a {
