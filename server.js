@@ -7,18 +7,13 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
 import { sql, db } from '@vercel/postgres';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
-const port = 3001;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'dist')));
 
 app.get('/api/videos', async (req, res) => {
      try {
-        const videosPath = path.join(__dirname, 'public', 'videos');
+        const videosPath = path.join(process.cwd(), 'public', 'videos');
         const files = await fs.readdir(videosPath);
         const videoFiles = files.filter(file => file.endsWith('.mp4'));
         res.json(videoFiles);
@@ -227,8 +222,10 @@ app.get('/api/download-cv', async (req, res) => {
     });
 
     // QR Code
-    const qrCodeDataUrl = await QRCode.toDataURL(`http://localhost:3001/verify-cv?id=12345`);
-    const qrCodeImage = await pdfDoc.embedPng(qr_code_data_url);
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers.host;
+    const qrCodeDataUrl = await QRCode.toDataURL(`${protocol}://${host}/verify-cv?id=12345`);
+    const qrCodeImage = await pdfDoc.embedPng(qrCodeDataUrl);
     page.drawImage(qrCodeImage, {
       x: 450,
       y: 60,
@@ -249,12 +246,5 @@ app.get('/api/download-cv', async (req, res) => {
   }
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
-});
 
 export default app;
