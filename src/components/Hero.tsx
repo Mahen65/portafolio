@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface HeroProps {
   content: {
@@ -24,4 +24,4 @@ const Hero: React.FC<HeroProps> = ({ content, backgroundVideo }) => {
   );
 };
 
-export default Hero;
+export default memo(Hero);
