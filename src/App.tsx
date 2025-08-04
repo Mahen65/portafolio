@@ -18,7 +18,7 @@ function App() {
   const [content, setContent] = useState<Content | null>(null);
 
   useEffect(() => {
-    fetch(`/content.json?t=${new Date().getTime()}`)
+    fetch('/api/get-content')
       .then((response) => response.json())
       .then((data) => setContent(data))
       .catch((error) => console.error('Failed to load content:', error));
