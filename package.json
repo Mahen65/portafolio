@@ -10,6 +10,8 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@vercel/postgres": "^0.8.0",
+    "dotenv": "^17.2.1",
     "express": "^4.17.1",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",

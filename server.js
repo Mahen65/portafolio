@@ -1,9 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
+import { sql, db } from '@vercel/postgres';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +15,7 @@ const port = 3001;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
+
 app.get('/api/videos', async (req, res) => {
      try {
         const videosPath = path.join(__dirname, 'public', 'videos');
@@ -28,38 +31,130 @@ app.get('/api/videos', async (req, res) => {
    });
 
 app.post('/api/save-content', async (req, res) => {
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    // Vercel's serverless functions have a writable /tmp directory
-    const tempDir = '/tmp';
-    const backupPath = path.join(tempDir, `content_${timestamp}.json`);
-    const livePath = path.join(tempDir, 'content.json');
+  const { bio, about, backgroundVideo, socialLinks, experience, projects } = req.body;
+  const client = await db.connect();
 
-    try {
-      // Try to create a backup from the existing live file in /tmp
-      await fs.copyFile(livePath, backupPath);
-    } catch (error) {
-      // If livePath doesn't exist, it's the first run, which is fine.
-      console.log('No existing live file to back up. Creating a new one.');
+  try {
+    await client.query('BEGIN');
+
+    // Using a single transaction to update all content
+    // About section
+    if (bio !== undefined && about !== undefined && backgroundVideo !== undefined) {
+      await client.query(
+        'UPDATE about SET bio = $1, about_text = $2, background_video = $3',
+        [bio, about, backgroundVideo]
+      );
     }
 
-    // Write the new content to the live file in /tmp
-    await fs.writeFile(livePath, JSON.stringify(req.body, null, 2));
+    // Social Links
+    if (socialLinks) {
+      await client.query('DELETE FROM social_links');
+      await Promise.all(socialLinks.map(link => {
+        return client.query('INSERT INTO social_links (name, url) VALUES ($1, $2)', [link.name, link.url]);
+      }));
+    }
 
-    // Note: Copying to 'dist' is not effective in serverless, as the build is static.
-    // The client should fetch from an API endpoint if it needs the latest content.
+    // Experience
+    if (experience) {
+      await client.query('DELETE FROM experience');
+      await Promise.all(experience.map(exp => {
+        return client.query('INSERT INTO experience (title, company, description) VALUES ($1, $2, $3)', [exp.title, exp.company, exp.description]);
+      }));
+    }
 
-    res.status(200).send({ message: 'Content saved successfully to temporary storage!' });
+    // Projects
+    if (projects) {
+      await client.query('DELETE FROM project_technologies');
+      await client.query('DELETE FROM projects');
+      for (const project of projects) {
+        const projectResult = await client.query(
+          'INSERT INTO projects (title, description) VALUES ($1, $2) RETURNING id',
+          [project.title, project.description]
+        );
+        const projectId = projectResult.rows[0].id;
+
+        if (project.technologies && project.technologies.length > 0) {
+          for (const techName of project.technologies) {
+            let techResult = await client.query('SELECT id FROM technologies WHERE name = $1', [techName]);
+            let techId;
+            if (techResult.rows.length > 0) {
+              techId = techResult.rows[0].id;
+            } else {
+              const newTechResult = await client.query('INSERT INTO technologies (name) VALUES ($1) RETURNING id', [techName]);
+              techId = newTechResult.rows[0].id;
+            }
+            await client.query('INSERT INTO project_technologies (project_id, technology_id) VALUES ($1, $2)', [projectId, techId]);
+          }
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'Content saved successfully.' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Failed to save content:', error);
-    res.status(500).send({ message: 'Failed to save content.' });
+    res.status(500).json({ message: 'Failed to save content.', error: error.message });
+  } finally {
+    client.release();
   }
+});
+
+app.get('/api/get-content', async (req, res) => {
+    try {
+        const aboutPromise = sql`SELECT bio, about_text, background_video FROM about LIMIT 1;`;
+        const socialLinksPromise = sql`SELECT name, url FROM social_links;`;
+        const experiencePromise = sql`SELECT title, company, description FROM experience;`;
+        const projectsPromise = sql`
+            SELECT p.id, p.title, p.description, COALESCE(json_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '[]') as technologies
+            FROM projects p
+            LEFT JOIN project_technologies pt ON p.id = pt.project_id
+            LEFT JOIN technologies t ON pt.technology_id = t.id
+            GROUP BY p.id, p.title, p.description;
+        `;
+
+        const [aboutResult, socialLinksResult, experienceResult, projectsResult] = await Promise.all([
+            aboutPromise,
+            socialLinksPromise,
+            experiencePromise,
+            projectsPromise
+        ]);
+
+        const aboutData = aboutResult.rows[0];
+
+        const content = {
+            bio: aboutData.bio,
+            about: aboutData.about_text,
+            backgroundVideo: aboutData.background_video,
+            socialLinks: socialLinksResult.rows,
+            experience: experienceResult.rows,
+            projects: projectsResult.rows.map(p => ({...p, technologies: p.technologies})),
+        };
+        
+        res.status(200).json(content);
+    } catch (error) {
+        console.error('Failed to get content:', error);
+        res.status(500).send({ message: 'Failed to get content.' });
+    }
 });
 
 app.get('/api/download-cv', async (req, res) => {
   try {
-    const contentPath = path.join(__dirname, 'public', 'content.json');
-    const content = JSON.parse(await fs.readFile(contentPath, 'utf-8'));
+    const aboutPromise = sql`SELECT bio FROM about LIMIT 1;`;
+    const experiencePromise = sql`SELECT title, company, description FROM experience;`;
+    const projectsPromise = sql`SELECT title, description FROM projects;`;
+
+    const [aboutResult, experienceResult, projectsResult] = await Promise.all([
+        aboutPromise,
+        experiencePromise,
+        projectsPromise
+    ]);
+
+    const content = {
+        bio: aboutResult.rows[0].bio,
+        experience: experienceResult.rows,
+        projects: projectsResult.rows,
+    };
 
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([612, 792]);
@@ -133,7 +228,7 @@ app.get('/api/download-cv', async (req, res) => {
 
     // QR Code
     const qrCodeDataUrl = await QRCode.toDataURL(`http://localhost:3001/verify-cv?id=12345`);
-    const qrCodeImage = await pdfDoc.embedPng(qrCodeDataUrl);
+    const qrCodeImage = await pdfDoc.embedPng(qr_code_data_url);
     page.drawImage(qrCodeImage, {
       x: 450,
       y: 60,
