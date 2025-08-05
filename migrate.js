@@ -19,6 +19,8 @@ async function main() {
     );
   `;
 
+  await sql`ALTER TABLE about ADD COLUMN IF NOT EXISTS subtitle TEXT;`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS social_links (
       id SERIAL PRIMARY KEY,
@@ -71,8 +73,8 @@ async function main() {
   await sql`DELETE FROM about;`;
 
   await sql`
-    INSERT INTO about (bio, about_text, background_video)
-    VALUES (${data.bio}, ${data.about}, ${data.backgroundVideo});
+    INSERT INTO about (bio, about_text, background_video, subtitle)
+    VALUES (${data.bio}, ${data.about}, ${data.backgroundVideo}, ${data.subtitle});
   `;
 
   for (const link of data.socialLinks) {

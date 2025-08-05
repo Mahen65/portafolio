@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 interface Content {
   bio: string;
+  subtitle: string;
   about: string;
   backgroundVideo: string;
   socialLinks: { name: string; url: string }[];
@@ -120,6 +121,15 @@ const Admin: React.FC<AdminProps> = ({ content, onContentUpdate }) => {
             rows={5}
             value={localContent.bio || ''}
             onChange={(e) => setLocalContent({ ...localContent, bio: e.target.value })}
+            style={{ whiteSpace: 'pre-wrap' }}
+          />
+        </div>
+        <div className="form-group">
+          <label>Subtitle</label>
+          <textarea
+            rows={5}
+            value={localContent.subtitle || ''}
+            onChange={(e) => setLocalContent({ ...localContent, subtitle: e.target.value })}
             style={{ whiteSpace: 'pre-wrap' }}
           />
         </div>

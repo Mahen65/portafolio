@@ -26,7 +26,7 @@ app.get('/api/videos', async (req, res) => {
    });
 
 app.post('/api/save-content', async (req, res) => {
-  const { bio, about, backgroundVideo, socialLinks, experience, projects } = req.body;
+  const { bio, about, backgroundVideo, socialLinks, experience, projects, subtitle } = req.body;
   const client = await db.connect();
 
   try {
@@ -34,10 +34,10 @@ app.post('/api/save-content', async (req, res) => {
 
     // Using a single transaction to update all content
     // About section
-    if (bio !== undefined && about !== undefined && backgroundVideo !== undefined) {
+    if (bio !== undefined && about !== undefined && backgroundVideo !== undefined && subtitle !== undefined) {
       await client.query(
-        'UPDATE about SET bio = $1, about_text = $2, background_video = $3',
-        [bio, about, backgroundVideo]
+        'UPDATE about SET bio = $1, about_text = $2, background_video = $3, subtitle = $4',
+        [bio, about, backgroundVideo, subtitle]
       );
     }
 
@@ -97,7 +97,7 @@ app.post('/api/save-content', async (req, res) => {
 
 app.get('/api/get-content', async (req, res) => {
     try {
-        const aboutPromise = sql`SELECT bio, about_text, background_video FROM about LIMIT 1;`;
+        const aboutPromise = sql`SELECT bio, about_text, background_video, subtitle FROM about LIMIT 1;`;
         const socialLinksPromise = sql`SELECT name, url FROM social_links;`;
         const experiencePromise = sql`SELECT title, company, description FROM experience;`;
         const projectsPromise = sql`
@@ -120,6 +120,7 @@ app.get('/api/get-content', async (req, res) => {
         const content = {
             bio: aboutData.bio,
             about: aboutData.about_text,
+            subtitle: aboutData.subtitle,
             backgroundVideo: aboutData.background_video,
             socialLinks: socialLinksResult.rows,
             experience: experienceResult.rows,
