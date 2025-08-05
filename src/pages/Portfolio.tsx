@@ -9,6 +9,7 @@ import Footer from '../components/Footer';
 
 interface Content {
   bio: string;
+  subtitle: string;
   about: string;
   backgroundVideo: string;
   socialLinks: { name: string; url: string; }[];

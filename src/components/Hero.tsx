@@ -3,6 +3,7 @@ import React, { memo } from 'react';
 interface HeroProps {
   content: {
     bio: string;
+    subtitle: string;
   };
   backgroundVideo: string;
 }
@@ -15,7 +16,7 @@ const Hero: React.FC<HeroProps> = ({ content, backgroundVideo }) => {
       </video>
       <div className="container">
         <h1>Asiri Somarathne</h1>
-        <p className="subtitle">Tech Lead | Full-Stack Developer | .NET & Python Specialist</p>
+        <p className="subtitle">{content.subtitle}</p>
         <p className="bio">{content.bio}</p>
         <a href="#about" className="cta-button">Learn More</a>
         <a href="/api/download-cv" className="cta-button" download>Download CV</a>
