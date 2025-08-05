@@ -230,7 +230,7 @@ const Admin: React.FC<AdminProps> = ({ content, onContentUpdate }) => {
           </button>
         </fieldset>
         <button type="button" className="cta-button" onClick={handleSave}>
-          Save and Download Content
+          Save
         </button>
       </main>
     </div>
